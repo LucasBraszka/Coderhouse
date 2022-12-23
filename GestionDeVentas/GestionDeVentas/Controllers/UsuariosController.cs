@@ -6,50 +6,15 @@ namespace GestionDeVentas.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UsuariosController : Controller
+    public class UsuarioController : Controller
     {
         private UsuarioRepository repository = new UsuarioRepository();
-        [HttpGet]
-        public IActionResult Get()
+        [HttpPost]//Crear Usuario
+        public ActionResult Post([FromBody] Usuario user)
         {
             try
             {
-                List<Usuario> lista = repository.listarUsuario();
-                return Ok(lista);
-            }
-            catch (Exception ex)
-            {
-                return Problem(ex.Message);
-            }
-        }
-
-        [HttpGet("{id}")]
-        public ActionResult<Usuario> Get(int id)
-        {
-            try
-            {
-                Usuario? usuario = repository.obtenerUsuario(id);
-                if (usuario != null)
-                {
-                    return Ok(usuario);
-                }
-                else
-                {
-                    return NotFound("El usuario no fue encontrado");
-                }
-            }
-            catch (Exception ex)
-            {
-                return Problem(ex.Message);
-            }
-        }
-
-        [HttpPost]
-        public ActionResult Post([FromBody] Usuario usuario)
-        {
-            try
-            {
-                Usuario usuarioCreado = repository.crearUsuario(usuario);
+                Usuario usuarioCreado = repository.crearUsuario(user);
                 return StatusCode(StatusCodes.Status201Created, usuarioCreado);
             }
             catch (Exception ex)
@@ -58,7 +23,35 @@ namespace GestionDeVentas.Controllers
             }
         }
 
-        [HttpDelete]
+        [HttpPut("{id}")]//Modificar Usuario
+        public ActionResult<Usuario> Put(int id, [FromBody] Usuario usuarioAModificar)
+        {
+            try
+            {
+                Usuario? usuarioActualizado = repository.actualizarUsuario(id, usuarioAModificar);
+                return Ok(usuarioActualizado);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
+
+        [HttpGet]//Traer usuario desde  NombreUsuario
+        public ActionResult<Usuario> Get(string nombreUser)
+        {
+            try
+            {
+                Usuario userMostrar = repository.obtenerUsuarioDsdeNU(nombreUser);
+                return Ok(userMostrar);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
+
+        [HttpDelete]//Eliminar Usuario
         public ActionResult Delete([FromBody] int id)
         {
             try
@@ -79,26 +72,6 @@ namespace GestionDeVentas.Controllers
             }
         }
 
-        [HttpPut("{id}")]
 
-        public ActionResult<Usuario> Put(long id, [FromBody]Usuario usuarioAActualizar)
-        {
-            try
-            {
-                Usuario? usuarioActualizado = repository.ActualizarUsuario(id, usuarioAActualizar);
-                if (usuarioActualizado != null)
-                {
-                    return Ok(usuarioActualizado);
-                }
-                else
-                {
-                    return NotFound("El usuario no fue encontrado");
-                }
-            }
-            catch (Exception ex)
-            {
-                return Problem(ex.Message);
-            }
-        }
     }
 }

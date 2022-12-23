@@ -24,51 +24,52 @@ namespace GestionDeVentas.Repository
             }
         }
 
+        public Usuario obtenerUsuarioDesdeReader(SqlDataReader reader)
+        {
+            Usuario user = new Usuario();
+            user.Id = long.Parse(reader["Id"].ToString());
+            user.Nombre = reader["Nombre"].ToString();
+            user.Apellido = reader["Apellido"].ToString();
+            user.NombreUsuario = reader["NombreUsuario"].ToString();
+            user.Contraseña = reader["Contraseña"].ToString();
+            user.Mail = reader["Mail"].ToString();
+            return user;
+        }
+
         public List<Usuario> listarUsuario()
         {
-            List<Usuario> lista = new List<Usuario>();
+            List<Usuario> listaU = new List<Usuario>();
             if (conexion == null)
             {
-                throw new Exception("Conexion no establecida");
+                throw new Exception("Conexión no establecida");
             }
             try
             {
-                using (SqlCommand cmd = new SqlCommand("SELECT * FROM usuario", conexion))
+                using (SqlCommand cmd = new SqlCommand("SELECT * FROM Usuario", conexion))
                 {
                     conexion.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        if (reader.HasRows)
+                        while (reader.Read())
                         {
-                            while (reader.Read())
-                            {
-                                Usuario usuario = obtenerUsuarioDesdeReader(reader);
-                                lista.Add(usuario);
-                            }
+                            Usuario user = obtenerUsuarioDesdeReader(reader);
+                            listaU.Add(user);
                         }
                     }
                 }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
                 conexion.Close();
             }
-            catch (Exception ex)
-            {
-
-            }
-            return lista;
+            return listaU;
         }
 
-        private Usuario obtenerUsuarioDesdeReader(SqlDataReader reader)
-        {
-            Usuario usuario = new Usuario();
-            usuario.Id = long.Parse(reader["Id"].ToString());
-            usuario.Nombre = reader["Nombre"].ToString();
-            usuario.Apellido = reader["Apellido"].ToString();
-            usuario.NombreUsuario = reader["NombreUsuario"].ToString();
-            usuario.Mail = reader["Mail"].ToString();
-            return usuario;
-        }
-
-        public Usuario? obtenerUsuario(long id)
+        public Usuario crearUsuario(Usuario user)
         {
             if (conexion == null)
             {
@@ -76,17 +77,61 @@ namespace GestionDeVentas.Repository
             }
             try
             {
-                using (SqlCommand cmd = new SqlCommand("SELECT * FROM usuario WHERE id = @id", conexion))
+                List<Usuario> listaU = listarUsuario();
+                using (SqlCommand cmd = new SqlCommand("INSERT INTO Usuario (Nombre, Apellido, NombreUsuario, Contraseña, Mail) " +
+                    "VALUES (@nombre, @apellido, @nombreUsuario, @contraseña, @mail); SELECT @@Identity", conexion))
                 {
                     conexion.Open();
-                    cmd.Parameters.Add(new SqlParameter("id", SqlDbType.BigInt) { Value = id });
+                    cmd.Parameters.Add(new SqlParameter("Nombre", SqlDbType.VarChar) { Value = user.Nombre });
+                    cmd.Parameters.Add(new SqlParameter("Apellido", SqlDbType.VarChar) { Value = user.Apellido });
+                    foreach (Usuario usuario in listaU)
+                    {
+                        if (user.NombreUsuario == usuario.NombreUsuario)
+                        {
+                            Random random = new Random();
+                            int num = random.Next(1, 999990);
+                            user.NombreUsuario = user.Nombre + num.ToString();
+
+                        }
+                    }
+                    cmd.Parameters.Add(new SqlParameter("NombreUsuario", SqlDbType.VarChar) { Value = user.NombreUsuario });
+                    cmd.Parameters.Add(new SqlParameter("Contraseña", SqlDbType.VarChar) { Value = user.Contraseña });
+                    cmd.Parameters.Add(new SqlParameter("Mail", SqlDbType.VarChar) { Value = user.Mail });
+                    user.Id = long.Parse(cmd.ExecuteScalar().ToString());
+                    return user;
+
+                }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                conexion.Close();
+            }
+        }
+
+
+        public Usuario obtenerUsuarioDesdeID(long id)
+        {
+            if (conexion == null)
+            {
+                throw new Exception("Conexión no establecida");
+            }
+            try
+            {
+                using (SqlCommand cmd = new SqlCommand("SELECT * FROM Usuario WHERE Id = @id", conexion))
+                {
+                    conexion.Open();
+                    cmd.Parameters.Add(new SqlParameter("Id", SqlDbType.BigInt) { Value = id });
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.HasRows)
                         {
                             reader.Read();
-                            Usuario usuario = obtenerUsuarioDesdeReader(reader);
-                            return usuario;
+                            Usuario user = obtenerUsuarioDesdeReader(reader);
+                            return user;
                         }
                         else
                         {
@@ -104,8 +149,8 @@ namespace GestionDeVentas.Repository
                 conexion.Close();
             }
         }
-
-        public Usuario crearUsuario(Usuario usuario)
+ 
+        public Usuario? actualizarUsuario(long id, Usuario usuarioAActualizar)
         {
             if (conexion == null)
             {
@@ -113,16 +158,89 @@ namespace GestionDeVentas.Repository
             }
             try
             {
-                using (SqlCommand cmd = new SqlCommand("INSERT INTO usuario(nombre, apellido, nombreusuario, contraseña, mail) VALUES(@nombre, @apellido, @nombreusuario, @contraseña, @mail); SELECT @@Identity", conexion))
+                Usuario user = obtenerUsuarioDesdeID(id);
+                if (user == null)
+                {
+                    return null;
+                }
+                List<string> camposAActualizar = new List<string>();
+                if (user.Nombre != usuarioAActualizar.Nombre && !string.IsNullOrEmpty(usuarioAActualizar.Nombre))
+                {
+                    camposAActualizar.Add("Nombre = @nombre");
+                    user.Nombre = usuarioAActualizar.Nombre;
+                }
+                if (user.Apellido != usuarioAActualizar.Apellido && !string.IsNullOrEmpty(usuarioAActualizar.Apellido))
+                {
+                    camposAActualizar.Add("Apellido = @apellido");
+                    user.Apellido = usuarioAActualizar.Apellido;
+                }
+                if (user.NombreUsuario != usuarioAActualizar.NombreUsuario && !string.IsNullOrEmpty(usuarioAActualizar.NombreUsuario))
+                {
+                    camposAActualizar.Add("NombreUsuario = @nombreUsuario");
+                    user.NombreUsuario = usuarioAActualizar.NombreUsuario;
+                }
+                if (user.Contraseña != usuarioAActualizar.Contraseña && !string.IsNullOrEmpty(usuarioAActualizar.Contraseña))
+                {
+                    camposAActualizar.Add("Contraseña = @contraseña");
+                    user.Contraseña = usuarioAActualizar.Contraseña;
+                }
+                if (user.Mail != usuarioAActualizar.Mail && !string.IsNullOrEmpty(usuarioAActualizar.Mail))
+                {
+                    camposAActualizar.Add("Mail = @mail");
+                    user.Mail = usuarioAActualizar.Mail;
+                }
+                if (camposAActualizar.Count == 0)
+                {
+                    throw new Exception("No new fields to update");
+                }
+                using (SqlCommand cmd = new SqlCommand($"UPDATE Producto SET {String.Join(", ", camposAActualizar)} WHERE id = @id", conexion))
+                {
+                    cmd.Parameters.Add(new SqlParameter("Nombre", SqlDbType.VarChar) { Value = usuarioAActualizar.Nombre });
+                    cmd.Parameters.Add(new SqlParameter("Apellido", SqlDbType.VarChar) { Value = usuarioAActualizar.Apellido });
+                    cmd.Parameters.Add(new SqlParameter("NombreUsuario", SqlDbType.VarChar) { Value = usuarioAActualizar.NombreUsuario });
+                    cmd.Parameters.Add(new SqlParameter("Contraseña", SqlDbType.VarChar) { Value = usuarioAActualizar.Contraseña });
+                    cmd.Parameters.Add(new SqlParameter("Mail", SqlDbType.VarChar) { Value = usuarioAActualizar.Mail });
+                    conexion.Open();
+                    cmd.ExecuteReader();
+                    return user;
+                }
+
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                conexion.Close();
+            }
+        }
+
+        public Usuario obtenerUsuarioDsdeNU(string nombreU)
+        {
+            if (conexion == null)
+            {
+                throw new Exception("Conexión no establecida");
+            }
+            try
+            {
+                using (SqlCommand cmd = new SqlCommand("SELECT * FROM Usuario WHERE NombreUsuario = @nombreUsuario", conexion))
                 {
                     conexion.Open();
-                    cmd.Parameters.Add(new SqlParameter("Nombre", SqlDbType.VarChar) { Value = usuario.Nombre });
-                    cmd.Parameters.Add(new SqlParameter("Apellido", SqlDbType.VarChar) { Value = usuario.Apellido });
-                    cmd.Parameters.Add(new SqlParameter("NombreUsuario", SqlDbType.VarChar) { Value = usuario.NombreUsuario });
-                    cmd.Parameters.Add(new SqlParameter("Contraseña", SqlDbType.VarChar) { Value = usuario.Contraseña });
-                    cmd.Parameters.Add(new SqlParameter("Mail", SqlDbType.VarChar) { Value = usuario.Mail });
-                    usuario.Id = long.Parse(cmd.ExecuteScalar().ToString());
-                    return usuario;
+                    cmd.Parameters.Add(new SqlParameter("NombreUsuario", SqlDbType.VarChar) { Value = nombreU });
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            reader.Read();
+                            Usuario user = obtenerUsuarioDesdeReader(reader);
+                            return user;
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
                 }
             }
             catch
@@ -144,76 +262,14 @@ namespace GestionDeVentas.Repository
             try
             {
                 int filasAfectadas = 0;
-                using (SqlCommand cmd = new SqlCommand("DELETE FROM usuario WHERE id = @id", conexion))
+                using (SqlCommand cmd = new SqlCommand("DELETE FROM Usuario WHERE Id = @id", conexion))
                 {
                     conexion.Open();
-                    cmd.Parameters.Add(new SqlParameter("id", SqlDbType.BigInt) { Value = id });
+                    cmd.Parameters.Add(new SqlParameter("Id", SqlDbType.BigInt) { Value = id });
                     filasAfectadas = cmd.ExecuteNonQuery();
-                }
-                conexion.Close();
-                return filasAfectadas > 0;
-            }
-            catch
-            {
-                throw;
-            }
-        }
 
-        public Usuario? ActualizarUsuario(long id, Usuario usuarioAActualizar)
-        {
-            if (conexion == null)
-            {
-                throw new Exception("Conexion establecida");
-            }
-            try
-            {
-                Usuario? usuario = obtenerUsuario(id);
-                if (usuario == null)
-                {
-                    return null;
                 }
-                List<string> camposAActualizar = new List<string>();
-                if (usuario.Nombre != usuarioAActualizar.Nombre && !string.IsNullOrEmpty(usuarioAActualizar.Nombre))
-                {
-                    camposAActualizar.Add("Nombre = @nombre");
-                    usuario.Nombre = usuarioAActualizar.Nombre;
-                }
-                if (usuario.Apellido != usuarioAActualizar.Apellido && !string.IsNullOrEmpty(usuarioAActualizar.Apellido))
-                {
-                    camposAActualizar.Add("Apellido = @apellido");
-                    usuario.Apellido = usuarioAActualizar.Apellido;
-                }
-                if (usuario.NombreUsuario != usuarioAActualizar.NombreUsuario && !string.IsNullOrEmpty(usuarioAActualizar.NombreUsuario))
-                {
-                    camposAActualizar.Add("NombreUsuario = @nombreusuario");
-                    usuario.NombreUsuario = usuarioAActualizar.NombreUsuario;
-                }
-                if (usuario.Contraseña != usuarioAActualizar.Contraseña && !string.IsNullOrEmpty(usuarioAActualizar.Contraseña))
-                {
-                    camposAActualizar.Add("Contraseña = @contraseña");
-                    usuario.Contraseña = usuarioAActualizar.Contraseña;
-                }
-                if (usuario.Mail != usuarioAActualizar.Mail && !string.IsNullOrEmpty(usuarioAActualizar.Mail))
-                {
-                    camposAActualizar.Add("Mail = @mail");
-                    usuario.Mail = usuarioAActualizar.Mail;
-                }
-                if (camposAActualizar.Count == 0)
-                {
-                    throw new Exception("Ningun campo fue actualizado");
-                }
-                using (SqlCommand cmd = new SqlCommand($"UPDATE usuario SET {String.Join(", ", camposAActualizar)} WHERE id=@id", conexion))
-                {
-                    cmd.Parameters.Add(new SqlParameter("nombre", SqlDbType.VarChar) { Value = usuarioAActualizar.Nombre });
-                    cmd.Parameters.Add(new SqlParameter("apellido", SqlDbType.VarChar) { Value = usuarioAActualizar.Apellido });
-                    cmd.Parameters.Add(new SqlParameter("nombreusuario", SqlDbType.VarChar) { Value = usuarioAActualizar.NombreUsuario });
-                    cmd.Parameters.Add(new SqlParameter("contraseña", SqlDbType.VarChar) { Value = usuarioAActualizar.Contraseña });
-                    cmd.Parameters.Add(new SqlParameter("mail", SqlDbType.VarChar) { Value = usuarioAActualizar.Mail });
-                    cmd.Parameters.Add(new SqlParameter("id", SqlDbType.BigInt) { Value = id });
-                    conexion.Open();
-                    cmd.ExecuteNonQuery();
-                    return usuario;
-                }
+                return filasAfectadas > 0;
             }
             catch
             {

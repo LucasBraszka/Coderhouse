@@ -24,47 +24,26 @@ namespace GestionDeVentas.Controllers
             }
         }
 
-        [HttpGet("{id}")]
-        public ActionResult<ProductoVendido> Get(int id)
-        {
-            try
-            {
-                ProductoVendido? productoVendido = repository.obtenerProductoVendido(id);
-                if (productoVendido != null)
-                {
-                    return Ok(productoVendido);
-                }
-                else
-                {
-                    return NotFound("El producto no fue encontrado");
-                }
-            }
-            catch (Exception ex)
-            {
-                return Problem(ex.Message);
-            }
-        }
-
         [HttpPost]
-        public ActionResult Post([FromBody] ProductoVendido productoVendido)
+        public ActionResult Post([FromBody] ProductoVendido productoV)
         {
             try
             {
-                ProductoVendido productoVendidoCreado = repository.crearProductoVendido(productoVendido);
-                return StatusCode(StatusCodes.Status201Created, productoVendidoCreado);
+                ProductoVendido productoVendido = repository.cargarProductosVendidos(productoV);
+                return StatusCode(StatusCodes.Status201Created, productoVendido);
             }
             catch (Exception ex)
             {
                 return Problem(ex.Message);
             }
         }
-
+        //eliminar producto vendido desde IdVenta
         [HttpDelete]
-        public ActionResult Delete([FromBody] long id)
+        public ActionResult Delete([FromBody] long idVta)
         {
             try
             {
-                bool seElimino = repository.eliminarProductoVendido(id);
+                bool seElimino = repository.eliminarProductoVendido(idVta);
                 if (seElimino)
                 {
                     return Ok();
@@ -72,28 +51,6 @@ namespace GestionDeVentas.Controllers
                 else
                 {
                     return NotFound();
-                }
-            }
-            catch (Exception ex)
-            {
-                return Problem(ex.Message);
-            }
-        }
-
-        [HttpPut("{id}")]
-
-        public ActionResult<ProductoVendido> Put(long id, [FromBody] ProductoVendido productoVendidoAActualizar)
-        {
-            try
-            {
-                ProductoVendido? productoVendidoActualizado = repository.ActualizarProductoVendido(id, productoVendidoAActualizar);
-                if (productoVendidoActualizado != null)
-                {
-                    return Ok(productoVendidoActualizado);
-                }
-                else
-                {
-                    return NotFound("El producto vendido no fue encontrado");
                 }
             }
             catch (Exception ex)

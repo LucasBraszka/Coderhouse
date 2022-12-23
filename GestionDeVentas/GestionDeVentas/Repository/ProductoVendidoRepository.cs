@@ -67,29 +67,26 @@ namespace GestionDeVentas.Repository
             return productoVendido;
         }
 
-        public ProductoVendido? obtenerProductoVendido(long id)
+        public List<ProductoVendido> obtenerProductoVendidoIdVenta(long idVenta)
         {
-            if (conexion == null)
-            {
-                throw new Exception("Conexión no establecida");
-            }
+            List<ProductoVendido> lista = new List<ProductoVendido>();
+            if (conexion == null) { throw new Exception("Conexión no establecida"); }
             try
             {
-                using (SqlCommand cmd = new SqlCommand("SELECT * FROM productovendido WHERE id = @id", conexion))
+                using (SqlCommand cmd = new SqlCommand("SELECT * FROM ProductoVendido WHERE idVenta=@idVenta", conexion))
                 {
                     conexion.Open();
-                    cmd.Parameters.Add(new SqlParameter("id", SqlDbType.BigInt) { Value = id });
+                    cmd.Parameters.Add(new SqlParameter("IdVenta", SqlDbType.BigInt) { Value = idVenta });
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.HasRows)
                         {
-                            reader.Read();
-                            ProductoVendido productoVendido = obtenerProductoVendidoDesdeReader(reader);
-                            return productoVendido;
-                        }
-                        else
-                        {
-                            return null;
+                            while (reader.Read())
+                            {
+                                ProductoVendido producto = obtenerProductoVendidoDesdeReader(reader);
+                                lista.Add(producto);
+                            }
+
                         }
                     }
                 }
@@ -102,24 +99,38 @@ namespace GestionDeVentas.Repository
             {
                 conexion.Close();
             }
+            return lista;
         }
 
-        public ProductoVendido crearProductoVendido(ProductoVendido productoVendido)
+        public ProductoVendido cargarProductosVendidos(ProductoVendido productoV)
         {
+            ProductoRepository repo = new ProductoRepository();
             if (conexion == null)
             {
                 throw new Exception("Conexión no establecida");
             }
             try
             {
-                using (SqlCommand cmd = new SqlCommand("INSERT INTO productovendido(IdProducto, IdVenta, Stock) VALUES(@IdProducto, @IdVenta, @Stock); SELECT @@Identity", conexion))
+                using (SqlCommand cmd = new SqlCommand("INSERT INTO ProductoVendido (IdProducto, Stock, IdVenta) VALUES (@idProducto, @stock, @idVenta); SELECT @@Identity", conexion))
                 {
                     conexion.Open();
-                    cmd.Parameters.Add(new SqlParameter("IdProducto", SqlDbType.Int) { Value = productoVendido.IdProducto});
-                    cmd.Parameters.Add(new SqlParameter("IdVenta", SqlDbType.BigInt) { Value = productoVendido.IdVenta});
-                    cmd.Parameters.Add(new SqlParameter("Stock", SqlDbType.Int) { Value = productoVendido.Stock});
-                    productoVendido.Id = long.Parse(cmd.ExecuteScalar().ToString());
-                    return productoVendido;
+                    cmd.Parameters.Add(new SqlParameter("IdProducto", SqlDbType.BigInt) { Value = productoV.IdProducto });
+                    Producto prodComparar = repo.obtenerProducto(productoV.IdProducto);
+
+                    if (productoV.Stock >= prodComparar.Stock)
+                    {
+                        Producto productoADescontar = repo.descontarStock(productoV.Stock, productoV.IdProducto);
+                        cmd.Parameters.Add(new SqlParameter("Stock", SqlDbType.Int) { Value = prodComparar.Stock });
+                    }
+                    else
+                    {
+                        Producto productoADescontar = repo.descontarStock(productoV.Stock, productoV.IdProducto);
+                        cmd.Parameters.Add(new SqlParameter("Stock", SqlDbType.Int) { Value = productoV.Stock });
+                    }
+
+                    cmd.Parameters.Add(new SqlParameter("IdVenta", SqlDbType.BigInt) { Value = productoV.IdVenta });
+                    productoV.Id = long.Parse(cmd.ExecuteScalar().ToString());
+                    return productoV;
                 }
             }
             catch
@@ -132,8 +143,10 @@ namespace GestionDeVentas.Repository
             }
         }
 
-        public bool eliminarProductoVendido(long id)
+        public bool eliminarProductoVendido(long idVenta)
         {
+            ProductoRepository repo = new ProductoRepository();
+            List<ProductoVendido> productoRef = obtenerProductoVendidoIdVenta(idVenta);
             if (conexion == null)
             {
                 throw new Exception("Conexión no establecida");
@@ -141,64 +154,20 @@ namespace GestionDeVentas.Repository
             try
             {
                 int filasAfectadas = 0;
-                using (SqlCommand cmd = new SqlCommand("DELETE FROM productovendido WHERE id = @id", conexion))
+                using (SqlCommand cmd = new SqlCommand("DELETE FROM ProductoVendido WHERE idVenta=@idVenta", conexion))
                 {
                     conexion.Open();
-                    cmd.Parameters.Add(new SqlParameter("id", SqlDbType.BigInt) { Value = id });
+
+                    foreach (ProductoVendido pv in productoRef)
+                    {
+                        Producto productoAModificar = repo.sumarStock(pv.Stock, pv.IdProducto);
+
+                    }
+                    cmd.Parameters.Add(new SqlParameter("IdVenta", SqlDbType.BigInt) { Value = idVenta });
                     filasAfectadas = cmd.ExecuteNonQuery();
                 }
-                conexion.Close();
-                return filasAfectadas > 0;
-            }
-            catch
-            {
-                throw;
-            }
-        }
 
-        public ProductoVendido? ActualizarProductoVendido(long id, ProductoVendido productoVendidoAActualizar)
-        {
-            if (conexion == null)
-            {
-                throw new Exception("Conexion establecida");
-            }
-            try
-            {
-                ProductoVendido? productoVendido = obtenerProductoVendido(id);
-                if (productoVendido == null)
-                {
-                    return null;
-                }
-                List<string> camposAActualizar = new List<string>();
-                if (productoVendido.IdProducto != productoVendidoAActualizar.IdProducto && productoVendidoAActualizar.IdProducto > 0)
-                {
-                    camposAActualizar.Add("IdProducto = @idproducto");
-                    productoVendido.IdProducto = productoVendidoAActualizar.IdProducto;
-                }
-                if (productoVendido.IdVenta != productoVendidoAActualizar.IdVenta && productoVendidoAActualizar.IdVenta > 0)
-                {
-                    camposAActualizar.Add("IdVenta = @idventa");
-                    productoVendido.IdVenta = productoVendidoAActualizar.IdVenta;
-                }
-                if (productoVendido.Stock != productoVendidoAActualizar.Stock && productoVendidoAActualizar.Stock >= 0)
-                {
-                    camposAActualizar.Add("Stock = @stock");
-                    productoVendido.Stock = productoVendidoAActualizar.Stock;
-                }
-                if (camposAActualizar.Count == 0)
-                {
-                    throw new Exception("Ningun campo fue actualizado");
-                }
-                using (SqlCommand cmd = new SqlCommand($"UPDATE productovendido SET {String.Join(", ", camposAActualizar)} WHERE id=@id", conexion))
-                {
-                    cmd.Parameters.Add(new SqlParameter("idproducto", SqlDbType.BigInt) { Value = productoVendidoAActualizar.IdProducto });
-                    cmd.Parameters.Add(new SqlParameter("idventa", SqlDbType.BigInt) { Value = productoVendidoAActualizar.IdVenta });
-                    cmd.Parameters.Add(new SqlParameter("stock", SqlDbType.Int) { Value = productoVendidoAActualizar.Stock });
-                    cmd.Parameters.Add(new SqlParameter("id", SqlDbType.BigInt) { Value = id });
-                    conexion.Open();
-                    cmd.ExecuteNonQuery();
-                    return productoVendido;
-                }
+                return filasAfectadas > 0;
             }
             catch
             {
@@ -208,6 +177,82 @@ namespace GestionDeVentas.Repository
             {
                 conexion.Close();
             }
+
+
         }
+            public List<ProductoVendido> obtenerProductoVendidoDesdeIdUser(long idVenta)
+            {
+                ProductoRepository repo = new ProductoRepository();
+                List<ProductoVendido> productoRef = obtenerProductoVendidoIdVenta(idVenta);
+                if (conexion == null)
+                {
+                    throw new Exception("Conexión no establecida");
+                }
+                try
+                {
+
+                    using (SqlCommand cmd = new SqlCommand("DELETE FROM ProductoVendido WHERE idVenta=@idVenta", conexion))
+                    {
+                        conexion.Open();
+
+                        foreach (ProductoVendido pv in productoRef)
+                        {
+                            Producto productoAModificar = repo.sumarStock(pv.Stock, pv.IdProducto);
+
+                        }
+                        cmd.Parameters.Add(new SqlParameter("IdVenta", SqlDbType.BigInt) { Value = idVenta });
+
+                    }
+
+                    return productoRef;
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+                    conexion.Close();
+                }
+
+            }
+
+            public List<ProductoVendido> obtenerListaProductoVendidoDesdeIdUser(long idVenta)
+            {
+                ProductoRepository repo = new ProductoRepository();
+                List<ProductoVendido> productoRef = obtenerProductoVendidoIdVenta(idVenta);
+                if (conexion == null)
+                {
+                    throw new Exception("Conexión no establecida");
+                }
+                try
+                {
+
+                    using (SqlCommand cmd = new SqlCommand("DELETE FROM ProductoVendido WHERE idVenta=@idVenta", conexion))
+                    {
+                        conexion.Open();
+
+                        foreach (ProductoVendido pv in productoRef)
+                        {
+                            Producto productoAModificar = repo.obtenerProducto(pv.IdProducto);
+
+                        }
+                        cmd.Parameters.Add(new SqlParameter("IdVenta", SqlDbType.BigInt) { Value = idVenta });
+
+                    }
+
+                    return productoRef;
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+                    conexion.Close();
+                }
+
+            }
+
     }
 }

@@ -223,5 +223,140 @@ namespace GestionDeVentas.Repository
                 conexion.Close();
             }
         }
+
+        public Producto? descontarStock(int stock, long id)
+        {
+
+            if (conexion == null)
+            {
+                throw new Exception("Conexión no establecida");
+            }
+            try
+            {
+
+                Producto producto = obtenerProducto(id);
+                if (producto == null)
+                {
+                    return null;
+                }
+                List<string> camposAActualizar = new List<string>();
+                camposAActualizar.Add("descripciones = @descripcion");
+                camposAActualizar.Add("costo = @costo");
+                camposAActualizar.Add("precioVenta = @precioVenta");
+                camposAActualizar.Add("Stock = @stock");
+                if (producto.Stock >= stock)
+                {
+                    producto.Stock = producto.Stock - stock;
+
+                }
+                else
+                {
+                    stock = producto.Stock;
+                    producto.Stock = 0;
+
+                }
+                using (SqlCommand cmd = new SqlCommand($"UPDATE Producto SET {String.Join(", ", camposAActualizar)} WHERE id = @id", conexion))
+                {
+                    cmd.Parameters.Add(new SqlParameter("descripciones", SqlDbType.VarChar) { Value = producto.Descripciones });
+                    cmd.Parameters.Add(new SqlParameter("costo", SqlDbType.Float) { Value = producto.Costo });
+                    cmd.Parameters.Add(new SqlParameter("precioVenta", SqlDbType.Float) { Value = producto.PrecioVenta });
+                    cmd.Parameters.Add(new SqlParameter("stock", SqlDbType.Int) { Value = producto.Stock });
+                    cmd.Parameters.Add(new SqlParameter("id", SqlDbType.BigInt) { Value = id });
+                    conexion.Open();
+                    cmd.ExecuteNonQuery();
+                    return producto;
+                }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                conexion.Close();
+            }
+
+        }
+
+        public Producto sumarStock(int stock, long id)
+        {
+
+            if (conexion == null)
+            {
+                throw new Exception("Conexión no establecida");
+            }
+            try
+            {
+
+                Producto producto = obtenerProducto(id);
+                if (producto == null)
+                {
+                    return null;
+                }
+                List<string> camposAActualizar = new List<string>();
+                camposAActualizar.Add("descripciones = @descripcion");
+                camposAActualizar.Add("costo = @costo");
+                camposAActualizar.Add("precioVenta = @precioVenta");
+                camposAActualizar.Add("Stock = @stock");
+                producto.Stock = producto.Stock + stock;
+
+                using (SqlCommand cmd = new SqlCommand($"UPDATE Producto SET {String.Join(", ", camposAActualizar)} WHERE id = @id", conexion))
+                {
+                    cmd.Parameters.Add(new SqlParameter("descripcion", SqlDbType.VarChar) { Value = producto.Descripciones });
+                    cmd.Parameters.Add(new SqlParameter("costo", SqlDbType.Float) { Value = producto.Costo });
+                    cmd.Parameters.Add(new SqlParameter("precioVenta", SqlDbType.Float) { Value = producto.PrecioVenta });
+                    cmd.Parameters.Add(new SqlParameter("stock", SqlDbType.Int) { Value = producto.Stock });
+                    cmd.Parameters.Add(new SqlParameter("id", SqlDbType.BigInt) { Value = id });
+                    conexion.Open();
+                    cmd.ExecuteNonQuery();
+                    return producto;
+                }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                conexion.Close();
+            }
+        }
+
+        public static Producto? obtenerProductoSimplificadoPorId(long id, SqlConnection conexion)
+        {
+            if (conexion == null)
+            {
+                throw new Exception("Conexión no establecida");
+            }
+            try
+            {
+                using (SqlCommand cmd = new SqlCommand("SELECT Id, Stock FROM producto WHERE id = @id", conexion))
+                {
+                    if (conexion.State == ConnectionState.Closed) conexion.Open();
+                    cmd.Parameters.Add(new SqlParameter("id", SqlDbType.BigInt) { Value = id });
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            reader.Read();
+                            Producto producto = new Producto()
+                            {
+                                Id = long.Parse(reader["Id"].ToString()),
+                                Stock = int.Parse(reader["Stock"].ToString())
+                            };
+                            return producto;
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                throw;
+            }
+        }
     }
 }

@@ -3,21 +3,13 @@
     public class Venta
     {
         public long Id { get; set; }
-        public long IdUsuario { get; set; }
-        public string Comentarios { get; set; }
+        public string? Comentarios { get; set; }
+        public int IdUsuario { get; set; }
+        public List<ProductoVendido>? ProductosVendidos { get; set; }
 
-        public Venta() 
+        public Venta()
         {
-            Id = 0;
-            IdUsuario = 0;
-            Comentarios = "";
-        }
-
-        public Venta(long id, long idusuario, string comentarios)
-        {
-            Id = id;
-            IdUsuario = idusuario;
-            Comentarios = comentarios;
+            ProductosVendidos = new List<ProductoVendido>();
         }
     }
 }
