@@ -1,0 +1,77 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/erikafosado/Documents/Eri/Coder/SistemaGestion-main/sistema_gestion_api/SistemaGestion/SistemaGestion.csproj": {}
+  },
+  "projects": {
+    "/Users/erikafosado/Documents/Eri/Coder/SistemaGestion-main/sistema_gestion_api/SistemaGestion/SistemaGestion.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/erikafosado/Documents/Eri/Coder/SistemaGestion-main/sistema_gestion_api/SistemaGestion/SistemaGestion.csproj",
+        "projectName": "SistemaGestion",
+        "projectPath": "/Users/erikafosado/Documents/Eri/Coder/SistemaGestion-main/sistema_gestion_api/SistemaGestion/SistemaGestion.csproj",
+        "packagesPath": "/Users/erikafosado/.nuget/packages/",
+        "outputPath": "/Users/erikafosado/Documents/Eri/Coder/SistemaGestion-main/sistema_gestion_api/SistemaGestion/obj/",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "/usr/local/share/dotnet/sdk/NuGetFallbackFolder"
+        ],
+        "configFilePaths": [
+          "/Users/erikafosado/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[6.2.3, )"
+            },
+            "System.Data.SqlClient": {
+              "target": "Package",
+              "version": "[4.8.5, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/7.0.100/RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
